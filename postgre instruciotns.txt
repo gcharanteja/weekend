@@ -1,0 +1,128 @@
+psql -h localhost -U user -d trading_bot
+
+You're in a container environment where systemd isn't available, so you need to use the `service` command instead. Here's how to fix this:
+
+1. **Start PostgreSQL using the service command:**
+```bash
+sudo service postgresql start
+```
+
+2. **Check if PostgreSQL is running:**
+```bash
+sudo service postgresql status
+```
+or
+```bash
+service --status-all | grep postgresql
+```
+
+3. **If PostgreSQL isn't installed or the service doesn't exist, you might need to install it:**
+```bash
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+```
+
+4. **Once PostgreSQL is running, try connecting again:**
+```bash
+sudo -u postgres psql
+```
+
+**Alternative approaches if the above doesn't work:**
+
+- **Check what services are available:**
+```bash
+service --status-all
+```
+
+- **If PostgreSQL shows as stopped (marked with `-`), start it:**
+```bash
+sudo service postgresql start
+```
+
+- **You can also try starting it directly:**
+```bash
+sudo -u postgres /usr/lib/postgresql/*/bin/pg_ctl start -D /var/lib/postgresql/*/main
+```
+
+The key issue is that you're trying to use `systemctl` (systemd) commands in a container that doesn't support systemd. The container is telling you to use the `service` command instead, which is the older SysV init system approach.
+
+
+The issue is that you're trying to run multiple SQL commands on a single line in psql. You need to execute them one at a time, each ending with a semicolon. Here's how to fix it:
+
+1. **Connect to PostgreSQL as the postgres user:**
+```bash
+sudo -u postgres psql
+```
+
+2. **Execute the commands one by one:**
+```sql
+CREATE DATABASE trading_bot;
+CREATE USER "user" WITH PASSWORD 'Charan@123';
+GRANT ALL PRIVILEGES ON DATABASE trading_bot TO "user";
+\q
+```
+
+Note that I put `"user"` in quotes because `user` is a reserved keyword in PostgreSQL.
+
+**Better approach - use a different username:**
+
+Since `user` is a reserved word, it's better to use a different username:
+
+```bash
+sudo -u postgres psql
+```
+
+```sql
+CREATE DATABASE trading_bot;
+CREATE USER trading_user WITH PASSWORD 'Charan@123';
+GRANT ALL PRIVILEGES ON DATABASE trading_bot TO trading_user;
+\q
+```
+
+3. **Then connect with the new user:**
+```bash
+psql -h localhost -U trading_user -d trading_bot
+```
+
+**Alternative: If you want to keep the username as "user":**
+
+```bash
+sudo -u postgres psql
+```
+
+```sql
+CREATE DATABASE trading_bot;
+CREATE USER "user" WITH PASSWORD 'Charan@123';
+GRANT ALL PRIVILEGES ON DATABASE trading_bot TO "user";
+\q
+```
+
+Then connect with:
+```bash
+psql -h localhost -U user -d trading_bot
+```
+
+The key points:
+- Execute SQL commands one at a time, each ending with semicolon
+- Put reserved keywords like `user` in double quotes
+- Consider using a non-reserved username like `trading_user` instead
+
+adn 
+
+=============================
+(venv) ➜  workspace git:(main) ✗ sudo service restart postgresql
+restart: unrecognized service
+(venv) ➜  workspace git:(main) ✗ sudo service postgresql restart
+Restarting PostgreSQL 15 database server: main.
+(venv) ➜  workspace git:(main) ✗ psql -h localhost -U user -d trading_bot
+Password for user user: 
+psql: error: connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "user"
+connection to server at "localhost" (127.0.0.1), port 5432 failed: FATAL:  password authentication failed for user "user"
+(venv) ➜  workspace git:(main) ✗ psql -h localhost -U  trading_user -d trading_bot 
+Password for user trading_user: 
+psql (15.13 (Debian 15.13-0+deb12u1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, compression: off)
+Type "help" for help.
+
+trading_bot=> \q
+(venv) ➜  workspace git:(main) ✗ 

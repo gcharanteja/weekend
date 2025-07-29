@@ -1,0 +1,1 @@
+[E 250728 10:08:55 smartWebSocketV2:303] Error occurred during WebSocket connection: module 'websocket' has no attribute 'WebSocketApp'
